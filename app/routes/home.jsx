@@ -1,6 +1,6 @@
-import { Search } from "lucide-react";
-import { useLoaderData, useNavigate } from "react-router";
-import { useState } from "react";
+import { Form, useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+
 const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
 
 const apiUrl = "https://api.openweathermap.org/data/2.5/weather?q=";
@@ -8,30 +8,29 @@ const apiUrl = "https://api.openweathermap.org/data/2.5/weather?q=";
 // ✅ React Router Loader
 export async function loader({ request }) {
   const url = new URL(request.url);
-  const input = url.searchParams.get("q") || "Nairobi";
+  const city = url.searchParams.get("city") || "Nairobi";
 
-  const res = await fetch(`${apiUrl}${input}&appid=${apiKey}&units=metric`);
+  const res = await fetch(`${apiUrl}${city}&appid=${apiKey}&units=metric`);
 
   if (!res.ok) throw new Error("Failed to fetch weather data");
   const data = await res.json();
+  console.log({ data });
+
   return data;
 }
 
-export default function Home() {
-  const weatherData = useLoaderData();
-  const [input, setInput] = useState("");
+export default function Home({ loaderData }) {
   const navigate = useNavigate();
+  const weatherData = loaderData;
+  console.log({ weatherData });
+  const [loading, setLoading] = useState(false);
+  let formRef = useRef(null);
 
-  const handleSearch = () => {
-    if (input.trim()) {
-      navigate(`/?q=${input.trim()}`);
-      setInput("");
+  useEffect(() => {
+    if (!loading) {
+      formRef.current.reset();
     }
-  };
-
-  const quickSearch = (city) => {
-    navigate(`/?q=${city}`);
-  };
+  }, [loading]);
 
   return (
     <div className="max-w-5xl mx-auto flex mt-10 gap-2 border-2 border-amber-300 rounded-lg">
@@ -60,19 +59,20 @@ export default function Home() {
 
       {/* Right Input Panel */}
       <div className="w-2/5 flex flex-col p-10">
-        <div className="flex gap-2 w-full">
+        <Form ref={formRef} className="flex gap-2 w-full">
           <input
             type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            name="city"
             placeholder="Search for a city"
             className="w-full p-2 rounded-md border-2 border-gray-300 flex-1 focus:outline-none focus:ring-2 focus:ring-amber-600"
           />
-          <Search
-            className="w-12 h-12 text-white bg-amber-600 rounded-md p-2 cursor-pointer transition-all duration-300 hover:bg-amber-700 hover:scale-110"
-            onClick={handleSearch}
-          />
-        </div>
+          <button
+            type="submit"
+            className="bg-amber-600 text-white p-2 rounded-md"
+          >
+            Search
+          </button>
+        </Form>
 
         <hr className="my-10" />
         <ul className="flex flex-col gap-2 mt-2">
@@ -80,7 +80,9 @@ export default function Home() {
             <li
               key={city}
               className="text-lg cursor-pointer hover:text-amber-600 hover:underline"
-              onClick={() => quickSearch(city)}
+              onClick={() => {
+                navigate(`/?city=${city}`);
+              }}
             >
               {city}
             </li>
